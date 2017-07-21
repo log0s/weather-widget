@@ -8,9 +8,10 @@
 
 .city-container {
 	float: right;
+	margin: 2px 35px 2px 2px;
 }
 .city-container .text-container {
-	margin: 2px;
+	margin: 0px 5px 0px 5px;
 }
 
 .location-input {
