@@ -1,0 +1,32 @@
+.widget-container {
+	width: 350px;
+}
+
+.sub-container {
+	margin: 2px;
+}
+
+.city-container {
+	float: right;
+}
+.city-container .text-container {
+	margin: 2px;
+}
+
+.location-input {
+	float: left;
+}
+
+.forecast-container {
+	clear: both;
+}
+.forecast-day {
+	display: inline-block;
+	width: 20%;
+}
+.forecast-day .text-container {
+	display: block;
+	width: 100%;
+	height: 18px;
+	overflow: hidden;
+}

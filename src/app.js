@@ -1,6 +1,7 @@
-import {div, input} from '@cycle/dom'
+import {div, input, span} from '@cycle/dom'
 import xs from 'xstream'
 import _ from 'lodash'
+import moment from 'moment'
 
 // FIXME - Find out how to inject env vars in cycle-scripts
 // const weatherbitApiKey = process.env.WEATHERBIT_API_KEY;
@@ -84,7 +85,7 @@ export function App (sources) {
     .flatten()
     // FIXME - Weird mapping due to janky AI returning different formats depending on type of search
     .map(res => res.body.count ? res.body.data[0].forecast : res.body.data)
-    .map(forecastData => _.map(forecastData, timeData => ({
+    .map(forecastData => _.map(_.take(forecastData, 5), timeData => ({
       time: timeData.datetime,
       temperature: timeData.temp,
       weather: timeData.weather.description
@@ -104,16 +105,18 @@ export function App (sources) {
 
   const vdom$ = state$.map(({weatherData, locationInput}) =>
     div('.widget-container', [
-      weatherData.location,
-      weatherData.temperature,
-      weatherData.weather,
-      input('.location-input', {
+      div('.city-container.sub-container', [
+        span('.text-container', weatherData.location),
+        span('.text-container', weatherData.temperature),
+        span('.text-container', weatherData.weather)
+      ]),
+      input('.location-input.sub-container', {
         value: locationInput
       }),
-      div('.forecast-container', _.map(weatherData.forecast, dayData => div('.forecast-day', [
-        dayData.time,
-        dayData.temperature,
-        dayData.weather
+      div('.forecast-container.sub-container', _.map(weatherData.forecast, dayData => div('.forecast-day', [
+        span('.text-container', moment.utc(dayData.time, 'YYYY-MM-DD:HH').local().format('h:mm a')),
+        span('.text-container', dayData.temperature),
+        span('.text-container', dayData.weather)
       ])))
     ])
   );
