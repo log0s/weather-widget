@@ -6,32 +6,64 @@ import _ from 'lodash'
 // const weatherbitApiKey = process.env.WEATHERBIT_API_KEY;
 const weatherbitApiKey = '6a243e77dc2947109a44774a1efe8ceb';
 
+function constructWeatherbitUrl(requestType, input) {
+  const rootUrl = 'https://api.weatherbit.io/v1.0';
+  const rootParams = `&country=us&units=I&key=${weatherbitApiKey}`;
+
+  if (input.type === 'ip') return `${rootUrl}/${requestType}/ip?ip=auto&units=I&key=${weatherbitApiKey}`;
+  return input.type === 'zipcode' ? `${rootUrl}/${requestType}/postal?postal_code=${input.value}${rootParams}` : `${rootUrl}/${requestType}/geosearch?city=${input.value}${rootParams}`;
+}
+
 export function App (sources) {
   const locationInput$ = sources.DOM.select('.location-input')
     .events('input')
-    .map(ev => ev.target.value)
+    .map(event => event.target.value)
     .startWith(null);
 
-  const getCityData$ = locationInput$
-    .map(value => ({
-      url: '',
-      category: 'weatherData',
-      method: 'GET'
-    }))
+  const locationSubmit$ = sources.DOM.select('.location-input')
+    .events('keydown')
+    .map(event => event.key === 'Enter')
+    .startWith(false);
+
+  const parsedLocationSubmit$ = xs.combine(locationInput$, locationSubmit$)
+    .map(([locationInput, locationSubmit]) => {
+      if (_.isNull(locationInput) || !locationSubmit) return null;
+
+      const parsed = parseInt(locationInput);
+
+      return locationInput.length === 5 && _.isFinite(parsed) ? {
+        type: 'zipcode',
+        value: parsed
+      } : {
+        type: 'city',
+        value: encodeURIComponent(locationInput)
+      }
+    });
+
+  const getCityData$ = parsedLocationSubmit$
+    .map(input => {
+      if (!_.isNull(input)) return {
+        url: constructWeatherbitUrl('current', input),
+        category: 'cityData',
+        method: 'GET'
+      };
+    })
     .startWith({
-      url: `https://api.weatherbit.io/v1.0/current/ip?ip=auto&units=I&key=${weatherbitApiKey}`,
+      url: constructWeatherbitUrl('current', {type:'ip'}),
       category: 'cityData',
       method: 'GET'
     });
 
-  const getForecastData$ = locationInput$
-    .map(value => ({
-      url: '',
-      category: 'weatherData',
-      method: 'GET'
-    }))
+  const getForecastData$ = parsedLocationSubmit$
+    .map(input => {
+      if (!_.isNull(input)) return {
+        url: constructWeatherbitUrl('forecast/3hourly', input),
+        category: 'forecastData',
+        method: 'GET'
+      };
+    })
     .startWith({
-      url: `https://api.weatherbit.io/v1.0/forecast/3hourly/ip?ip=auto&days=1&units=I&key=${weatherbitApiKey}`,
+      url: constructWeatherbitUrl('forecast/3hourly', {type: 'ip'}),
       category: 'forecastData',
       method: 'GET'
     });
@@ -55,7 +87,8 @@ export function App (sources) {
 
   const forecastData$ = sources.HTTP.select('forecastData')
     .flatten()
-    .map(res => res.body.data)
+    // FIXME - Weird mapping due to janky AI returning different formats depending on type of search
+    .map(res => res.body.count ? res.body.data[0].forecast : res.body.data)
     .map(forecastData => _.map(forecastData, timeData => ({
       time: timeData.datetime,
       temperature: timeData.temp,
