@@ -79,11 +79,6 @@ export function App (sources) {
       weather: cityData.weather.description
     }))
     .startWith(null);
-    // .startWith({
-    //   location: 'ERMAGERD',
-    //   temperature: 'COLD AS BALLS',
-    //   weather: 'IT GONE RAIN'
-    // });
 
   const forecastData$ = sources.HTTP.select('forecastData')
     .flatten()
@@ -95,20 +90,6 @@ export function App (sources) {
       weather: timeData.weather.description
     })))
     .startWith(null);
-
-  // const weatherData$ = xs.of({
-  //   location: 'ERMAGERD',
-  //   forecast: [
-  //     {
-  //       temperature: 66,
-  //       weather: 'dude'
-  //     },
-  //     {
-  //       temperature: 77,
-  //       weather: 'bro'
-  //     }
-  //   ]
-  // });
 
   const state$ = xs.combine(locationInput$, cityData$, forecastData$)
     .map(([locationInput, cityData, forecastData]) => ({
